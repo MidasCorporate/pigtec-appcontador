@@ -1,15 +1,18 @@
-import { createBrowserRouter } from 'react-router-dom'
+// routes.ts
+import { createBrowserRouter, RouteObject } from 'react-router-dom'
 
+import AuthRoute from './components/AuthRoute'
+import ProtectedRoute from './components/ProtectedRoute'
 import { AppLayout } from './pages/_layouts/app'
 import { AuthLayout } from './pages/_layouts/auth'
 import { NotFound } from './pages/404'
 import { Dashboard } from './pages/app/dashboard/dashboard'
-import { Orders } from './pages/app/orders/orders'
+import { Orders } from './pages/app/scores/scores'
 import { SignIn } from './pages/auth/sign-in'
 import { SignUp } from './pages/auth/sign-up'
 import { Error } from './pages/error'
 
-export const router = createBrowserRouter([
+const routes: RouteObject[] = [
   {
     path: '/',
     element: <AppLayout />,
@@ -17,11 +20,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <Dashboard />,
+        element: <ProtectedRoute element={<Dashboard />} />,
       },
       {
-        path: '/orders',
-        element: <Orders />,
+        path: '/scors',
+        element: <ProtectedRoute element={<Orders />} />,
       },
     ],
   },
@@ -31,11 +34,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/sign-in',
-        element: <SignIn />,
+        element: <AuthRoute element={<SignIn />} />,
       },
       {
         path: '/sign-up',
-        element: <SignUp />,
+        element: <AuthRoute element={<SignUp />} />,
       },
     ],
   },
@@ -43,4 +46,6 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFound />,
   },
-])
+]
+
+export const router = createBrowserRouter(routes)

@@ -1,26 +1,20 @@
-export type OrderStatus =
-  | 'pending'
-  | 'canceled'
-  | 'processing'
-  | 'delivering'
-  | 'delivered'
+export type OrderStatus = 'not_found' | 'canceled' | 'happening' | 'finalized'
 
 interface OrderStatusProps {
   status: OrderStatus
 }
 
 const orderStatusMap: Record<OrderStatus, string> = {
-  pending: 'Pendente',
+  not_found: 'Pendente',
   canceled: 'Cancelado',
-  delivered: 'Entregue',
-  delivering: 'Em entrega',
-  processing: 'Em preparo',
+  finalized: 'Finalizado',
+  happening: 'Acontecendo',
 }
 
 export function OrderStatus({ status }: OrderStatusProps) {
   return (
     <div className="flex items-center gap-2">
-      {status === 'pending' && (
+      {status === 'not_found' && (
         <span className="h-2 w-2 rounded-full bg-slate-400" />
       )}
 
@@ -28,11 +22,11 @@ export function OrderStatus({ status }: OrderStatusProps) {
         <span className="h-2 w-2 rounded-full bg-rose-500" />
       )}
 
-      {status === 'delivered' && (
+      {status === 'finalized' && (
         <span className="h-2 w-2 rounded-full bg-emerald-500" />
       )}
 
-      {['processing', 'delivering'].includes(status) && (
+      {['processing', 'happening'].includes(status) && (
         <span className="h-2 w-2 rounded-full bg-amber-500" />
       )}
 

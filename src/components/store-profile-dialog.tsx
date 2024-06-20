@@ -5,11 +5,9 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import {
-  getManagedRestaurant,
-  GetManagedRestaurantResponse,
-} from '@/api/get-managed-restaurant'
+import { getUserDetails, GetUserDetailsResponse } from '@/api/get-user-details'
 import { updateProfile } from '@/api/update-profile'
+import { useAuth } from '@/hooks/auth'
 
 import { Button } from './ui/button'
 import {
@@ -32,10 +30,11 @@ type StoreProfileSchema = z.infer<typeof storeProfileSchema>
 
 export function StoreProfileDialog() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   const { data: managedRestaurant } = useQuery({
     queryKey: ['managed-restaurant'],
-    queryFn: getManagedRestaurant,
+    queryFn: () => getUserDetails(user.id),
     staleTime: Infinity,
   })
 
@@ -47,7 +46,7 @@ export function StoreProfileDialog() {
     resolver: zodResolver(storeProfileSchema),
     values: {
       name: managedRestaurant?.name ?? '',
-      description: managedRestaurant?.description ?? '',
+      description: managedRestaurant?.email ?? '',
     },
   })
 
@@ -55,7 +54,7 @@ export function StoreProfileDialog() {
     name,
     description,
   }: StoreProfileSchema) {
-    const cached = queryClient.getQueryData<GetManagedRestaurantResponse>([
+    const cached = queryClient.getQueryData<GetUserDetailsResponse>([
       'managed-restaurant',
     ])
 

@@ -6,19 +6,22 @@ import { RouterProvider } from 'react-router-dom'
 import { Toaster } from 'sonner'
 
 import { ThemeProvider } from './components/theme/theme-provider'
+import AuthContext from './hooks'
 import { queyClient } from './lib/react-query'
 import { router } from './routes'
 
 export function App() {
   return (
     <HelmetProvider>
-      <ThemeProvider storageKey="pigcount-theme">
-        <Helmet titleTemplate="%s | pingCount" />
-        <Toaster richColors />
-        <QueryClientProvider client={queyClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </ThemeProvider>
+      <AuthContext>
+        <ThemeProvider storageKey="pigcount-theme">
+          <Helmet titleTemplate="%s | pingCount" />
+          <Toaster richColors />
+          <QueryClientProvider client={queyClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </AuthContext>
     </HelmetProvider>
   )
 }
