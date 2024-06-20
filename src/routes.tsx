@@ -1,7 +1,7 @@
 // routes.ts
 import { createBrowserRouter, RouteObject } from 'react-router-dom'
 
-import AuthRoute from './components/AuthRoute'
+import AuthRoute from './components/authRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AppLayout } from './pages/_layouts/app'
 import { AuthLayout } from './pages/_layouts/auth'
