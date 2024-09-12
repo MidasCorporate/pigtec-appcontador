@@ -263,7 +263,7 @@ export function OrderDetails({ scorId, open }: OrderDetailsProps) {
             ) : (
               <>
                 <p>Pesagens ({scor.markings.length})</p>
-                <div className="max-h-56 w-full overflow-y-auto">
+                <div className="max-h-full w-full overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

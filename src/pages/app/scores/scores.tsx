@@ -62,7 +62,7 @@ export function Orders() {
                   <TableHead className="w-[64px]"></TableHead>
                   <TableHead className="w-[140px]">Identificador</TableHead>
                   <TableHead className="w-[140px]">Lote</TableHead>
-                  <TableHead className="w-[180px]">Realizado há</TableHead>
+                  <TableHead className="w-[180px]">Iniciado há</TableHead>
                   <TableHead className="w-[140px]">Status</TableHead>
                   <TableHead>Imóvel</TableHead>
                   <TableHead className="w-[140px]">Total da contagem</TableHead>

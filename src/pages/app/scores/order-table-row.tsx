@@ -56,7 +56,6 @@ export interface ScoresTableRowProps {
 export function OrderTableRow({ scores }: ScoresTableRowProps) {
   const [isDetailsOpen, setDetailsOpen] = useState(false)
   const [isDetailsOpenVideo, setDetailsOpenVideo] = useState(false)
-
   // const queryClient = useQueryClient()
 
   // function updateOrderStatusOnCache(
