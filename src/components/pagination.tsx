@@ -7,20 +7,21 @@ import {
 
 import { Button } from './ui/button'
 
-export interface PaginationProps {
+interface PaginationProps {
   pageIndex: number
   totalCount: number
   perPage: number
-  onPagChange: (pageIndex: number) => Promise<void> | void
+  onPageChange: (pageIndex: number) => Promise<void> | void
 }
 
 export function Pagination({
   pageIndex,
   perPage,
   totalCount,
-  onPagChange,
+  onPageChange,
 }: PaginationProps) {
   const pages = Math.ceil(totalCount / perPage) || 1
+
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">
@@ -29,11 +30,11 @@ export function Pagination({
 
       <div className="flex items-center gap-6 lg:gap-8">
         <div className="text-sm font-medium">
-          Página {pageIndex + 1} de {pages}
+          Página {pageIndex} de {pages}
         </div>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => onPagChange(0)}
+            onClick={() => onPageChange(0)}
             variant="outline"
             className="h-8 w-8 p-0"
             disabled={pageIndex === 0}
@@ -42,7 +43,7 @@ export function Pagination({
             <span className="sr-only">Primeira página</span>
           </Button>
           <Button
-            onClick={() => onPagChange(pageIndex - 1)}
+            onClick={() => onPageChange(pageIndex - 1)}
             variant="outline"
             className="h-8 w-8 p-0"
             disabled={pageIndex === 0}
@@ -51,7 +52,7 @@ export function Pagination({
             <span className="sr-only">Página anterior</span>
           </Button>
           <Button
-            onClick={() => onPagChange(pageIndex + 1)}
+            onClick={() => onPageChange(pageIndex + 1)}
             variant="outline"
             className="h-8 w-8 p-0"
             disabled={pages <= pageIndex + 1}
@@ -60,7 +61,7 @@ export function Pagination({
             <span className="sr-only">Próxima página</span>
           </Button>
           <Button
-            onClick={() => onPagChange(pages - 1)}
+            onClick={() => onPageChange(pages - 1)}
             variant="outline"
             className="h-8 w-8 p-0"
             disabled={pages <= pageIndex + 1}

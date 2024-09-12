@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Printer } from 'lucide-react'
 import QRCode from 'qrcode.react'
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useReactToPrint } from 'react-to-print'
 import { toast } from 'sonner'
@@ -45,8 +45,10 @@ type ScorSchema = z.infer<typeof scorSchema>
 
 export function OrderDetails({ scorId, open }: OrderDetailsProps) {
   const queryClient = useQueryClient()
+  const [update, setUpdate] = useState('')
+
   const { data: scor } = useQuery({
-    queryKey: ['scor', scorId],
+    queryKey: ['scor', scorId, update],
     queryFn: () => getScorDetails({ scorId }),
     enabled: open,
   })
@@ -96,14 +98,16 @@ export function OrderDetails({ scorId, open }: OrderDetailsProps) {
       nfe: scor?.nfe ?? '',
     },
   })
-
+  console.log('isSubmitted', isSubmitted)
   async function handleUpdateScor(data: ScorSchema) {
     try {
+      console.log('data', data)
       await updateScorFn({
         gta: data.gta || '',
         nfe: data.nfe || '',
         id: scor?.id || '',
       })
+      setUpdate('data')
       toast.success('Contagem atualizado com sucesso!')
     } catch {
       toast.error('Falha ao atualizar a contagem, tente novamente')
@@ -119,7 +123,7 @@ export function OrderDetails({ scorId, open }: OrderDetailsProps) {
       .toFixed(2)
     return weight
   }, [scor])
-  console.log('eeeeeee', weightTotalMale)
+
   const weightTotalFemale = useMemo(() => {
     const weight = scor?.markings
       .filter((a) => a.gender === 'female')
@@ -131,7 +135,7 @@ export function OrderDetails({ scorId, open }: OrderDetailsProps) {
   }, [scor])
 
   return (
-    <DialogContent className="scrollbar-hide mt-6 max-h-[42rem] overflow-y-auto">
+    <DialogContent className="scrollbar-hide max-h-[36rem] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Contagem: {scorId}</DialogTitle>
         <DialogDescription>Detalhes da contagem</DialogDescription>
@@ -297,10 +301,10 @@ export function OrderDetails({ scorId, open }: OrderDetailsProps) {
             )}
             <TableFooter>
               <TableRow>
-                <TableCell className="w-full">
+                <TableCell className="w-full font-bold">
                   Total de animais pesados
                 </TableCell>
-                <TableCell className="text-right font-medium">
+                <TableCell className="text-right font-bold">
                   {scor.quantity}
                 </TableCell>
               </TableRow>

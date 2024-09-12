@@ -39,14 +39,15 @@ export function Orders() {
         status: status === 'all' ? null : status,
       }),
   })
-  console.log('resultresultresult', result)
-  function handlePaginate(pageIndex: number) {
+  function handlePaginate(page: number) {
+    console.log('fooo')
     setSearchParams((state) => {
-      state.set('page', (pageIndex + 1).toString())
+      state.set('page', page.toString())
 
       return state
     })
   }
+
   return (
     <>
       <Helmet title="Contagens" />
@@ -85,7 +86,7 @@ export function Orders() {
               pageIndex={result.pagination.page}
               totalCount={result.pagination.total}
               perPage={result.pagination.take}
-              onPagChange={handlePaginate}
+              onPageChange={handlePaginate}
             />
           )}
         </div>
