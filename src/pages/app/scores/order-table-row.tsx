@@ -1,3 +1,4 @@
+import { Checkbox } from '@radix-ui/react-checkbox'
 import { Dialog, DialogTrigger } from '@radix-ui/react-dialog'
 // import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
@@ -116,11 +117,14 @@ export function OrderTableRow({ scores }: ScoresTableRowProps) {
   return (
     <TableRow>
       <TableCell>
+        <Checkbox id="terms" />
+      </TableCell>
+      <TableCell>
         <Dialog open={isDetailsOpen} onOpenChange={setDetailsOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="xs">
               <Search className="h-3 w-3" />
-              <span className="sr-only">Detalhes do pedido</span>
+              <span className="sr-only">Detalhes da contagem</span>
             </Button>
           </DialogTrigger>
 
@@ -128,7 +132,7 @@ export function OrderTableRow({ scores }: ScoresTableRowProps) {
         </Dialog>
       </TableCell>
       <TableCell className="font-mono text-xs font-medium">
-        z{scores.id}
+        {scores.id}
       </TableCell>
       <TableCell className="font-mono text-xs font-medium">
         {scores.lote}
