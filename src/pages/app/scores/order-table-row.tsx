@@ -1,10 +1,10 @@
-import { Checkbox } from '@radix-ui/react-checkbox'
 import { Dialog, DialogTrigger } from '@radix-ui/react-dialog'
 // import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Search, Video } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 // import { approveOrder } from '@/api/approve-order'
 // import { deliverOrder } from '@/api/deliver-order'
@@ -12,6 +12,7 @@ import { useState } from 'react'
 // import { GetScores } from '@/api/get-pig-scores'
 import { OrderStatus } from '@/components/order-status'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { TableCell, TableRow } from '@/components/ui/table'
 
 import { OrderDetails } from './order-details'
@@ -28,6 +29,8 @@ import { OrderDatailsVideo } from './order-details-video'
 // }
 
 export interface ScoresTableRowProps {
+  setArrayScores: (score: string[]) => void
+  arrayScores: string[]
   scores: {
     id: string
     start_date: string
@@ -54,9 +57,14 @@ export interface ScoresTableRowProps {
   }
 }
 
-export function OrderTableRow({ scores }: ScoresTableRowProps) {
+export function OrderTableRow({
+  scores,
+  arrayScores,
+  setArrayScores,
+}: ScoresTableRowProps) {
   const [isDetailsOpen, setDetailsOpen] = useState(false)
   const [isDetailsOpenVideo, setDetailsOpenVideo] = useState(false)
+
   // const queryClient = useQueryClient()
 
   // function updateOrderStatusOnCache(
@@ -114,47 +122,67 @@ export function OrderTableRow({ scores }: ScoresTableRowProps) {
   //       updateOrderStatusOnCache(orderId, 'finalized')
   //     },
   //   })
-  return (
-    <TableRow>
-      <TableCell>
-        <Checkbox id="terms" />
-      </TableCell>
-      <TableCell>
-        <Dialog open={isDetailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="xs">
-              <Search className="h-3 w-3" />
-              <span className="sr-only">Detalhes da contagem</span>
-            </Button>
-          </DialogTrigger>
 
-          <OrderDetails scorId={scores.id} open={isDetailsOpen} />
-        </Dialog>
-      </TableCell>
-      <TableCell className="font-mono text-xs font-medium">
-        {scores.id}
-      </TableCell>
-      <TableCell className="font-mono text-xs font-medium">
-        {scores.lote}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {formatDistanceToNow(scores.created_at, {
-          locale: ptBR,
-          addSuffix: true,
-        })}
-      </TableCell>
-      <TableCell>
-        <OrderStatus status={scores.progress} />
-      </TableCell>
-      <TableCell className="font-meduim">{scores.name}</TableCell>
-      <TableCell className="font-medium">
-        {/* {(Number(scores.weight) / 100).toLocaleString('pt-BR', {
+  const handleSelectItem = (scorId: string) => () => {
+    const alreadySelected = arrayScores.findIndex((item) => item === scorId)
+    if (alreadySelected >= 0) {
+      const filteredItems = arrayScores.filter((item) => item !== scorId)
+      setArrayScores(filteredItems)
+    } else {
+      if (arrayScores.length < 2) {
+        setArrayScores([...arrayScores, scorId])
+      } else {
+        toast.error('Permitido selecionar apenas 2 contagens.')
+      }
+    }
+  }
+  return (
+    <>
+      <TableRow>
+        <TableCell>
+          <Checkbox
+            // disabled={}
+            checked={arrayScores.includes(scores.id)}
+            onCheckedChange={handleSelectItem(scores.id)}
+            id={scores.id}
+          />
+        </TableCell>
+        <TableCell>
+          <Dialog open={isDetailsOpen} onOpenChange={setDetailsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="xs">
+                <Search className="h-3 w-3" />
+                <span className="sr-only">Detalhes da contagem</span>
+              </Button>
+            </DialogTrigger>
+
+            <OrderDetails scorId={scores.id} open={isDetailsOpen} />
+          </Dialog>
+        </TableCell>
+        <TableCell id={scores.id} className="font-mono text-xs font-medium">
+          {scores.id}
+        </TableCell>
+        <TableCell className="font-mono text-xs font-medium">
+          {scores.lote}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {formatDistanceToNow(scores.created_at, {
+            locale: ptBR,
+            addSuffix: true,
+          })}
+        </TableCell>
+        <TableCell>
+          <OrderStatus status={scores.progress} />
+        </TableCell>
+        <TableCell className="font-meduim">{scores.name}</TableCell>
+        <TableCell className="font-medium">
+          {/* {(Number(scores.weight) / 100).toLocaleString('pt-BR', {
           style: 'currency',
           currency: 'BRL',
         })} */}
-        {scores.quantity}
-      </TableCell>
-      {/* <TableCell>
+          {scores.quantity}
+        </TableCell>
+        {/* <TableCell>
         {scores.progress === 'happening' && (
           <Button
             onClick={() => approveOrderFn({ orderId: scores.id })}
@@ -189,21 +217,22 @@ export function OrderTableRow({ scores }: ScoresTableRowProps) {
           </Button>
         )}
       </TableCell> */}
-      <TableCell>
-        <Dialog open={isDetailsOpenVideo} onOpenChange={setDetailsOpenVideo}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="xs">
-              <Video className="mr-1 h-3 w-3" />
-              Visualizar
-            </Button>
-          </DialogTrigger>
+        <TableCell>
+          <Dialog open={isDetailsOpenVideo} onOpenChange={setDetailsOpenVideo}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="xs">
+                <Video className="mr-1 h-3 w-3" />
+                Visualizar
+              </Button>
+            </DialogTrigger>
 
-          <OrderDatailsVideo
-            scorId={scores.id}
-            openVideo={isDetailsOpenVideo}
-          />
-        </Dialog>
-      </TableCell>
-    </TableRow>
+            <OrderDatailsVideo
+              scorId={scores.id}
+              openVideo={isDetailsOpenVideo}
+            />
+          </Dialog>
+        </TableCell>
+      </TableRow>
+    </>
   )
 }

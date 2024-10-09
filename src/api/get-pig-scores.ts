@@ -63,7 +63,7 @@ export async function getOrders({
 }: GetOrdersQuery) {
   console.log('temp', pageIndex, customerName, orderId, status)
   const response = await api.get<GetScores>(
-    `/scores/filter?take=6&page=${pageIndex}`,
+    `/scores/filter?take=6&page=${pageIndex}&joined=false`,
   )
 
   return response.data
