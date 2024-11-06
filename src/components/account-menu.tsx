@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/auth'
 import { StoreProfileDialog } from './store-profile-dialog'
 import { Button } from './ui/button'
-import { Dialog, DialogTrigger } from './ui/dialog'
+import { Dialog } from './ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +21,7 @@ import { Skeleton } from './ui/skeleton'
 export function AccountMenu() {
   const navigate = useNavigate()
   const { signOut, user } = useAuth()
-  console.log('user', user)
+  // console.log('user', user)
   // const { data: profile, isLoading: isLoadingProfile } = useQuery({
   //   queryKey: ['profile'],
   //   queryFn: () => getUserDetails(user.id),
@@ -70,12 +70,12 @@ export function AccountMenu() {
             )}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DialogTrigger asChild>
-            <DropdownMenuItem>
-              <Building className="mr-2 h-4 w-4" />
-              <span>Perfil da farm</span>
-            </DropdownMenuItem>
-          </DialogTrigger>
+          {/* <DialogTrigger asChild> */}
+          <DropdownMenuItem>
+            <Building className="mr-2 h-4 w-4" />
+            <span>Perfil da farm</span>
+          </DropdownMenuItem>
+          {/* </DialogTrigger> */}
 
           <DropdownMenuItem
             asChild

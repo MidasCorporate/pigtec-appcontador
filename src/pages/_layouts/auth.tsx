@@ -21,7 +21,8 @@ export function AuthLayout() {
         </div> */}
 
         <footer className="text-sm">
-          Painel de gerenciamento &copy; MidasCorp - {new Date().getFullYear()}
+          Painel de gerenciamento (HOMOLOGAÇÃO) &copy;Inovagrotec -{' '}
+          {new Date().getFullYear()}
         </footer>
       </div>
 
