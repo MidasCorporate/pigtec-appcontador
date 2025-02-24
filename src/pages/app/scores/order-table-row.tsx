@@ -54,6 +54,11 @@ export interface ScoresTableRowProps {
       id: string
       name: string
     }
+    files: {
+      id: string
+      file_url: string
+      type: string
+    }[]
   }
 }
 
@@ -218,19 +223,24 @@ export function OrderTableRow({
         )}
       </TableCell> */}
         <TableCell>
-          <Dialog open={isDetailsOpenVideo} onOpenChange={setDetailsOpenVideo}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="xs">
-                <Video className="mr-1 h-3 w-3" />
-                Visualizar
-              </Button>
-            </DialogTrigger>
+          {scores.files.length > 0 && (
+            <Dialog
+              open={isDetailsOpenVideo}
+              onOpenChange={setDetailsOpenVideo}
+            >
+              <DialogTrigger asChild>
+                <Button variant="outline" size="xs">
+                  <Video className="mr-1 h-3 w-3" />
+                  Visualizar
+                </Button>
+              </DialogTrigger>
 
-            <OrderDatailsVideo
-              scorId={scores.id}
-              openVideo={isDetailsOpenVideo}
-            />
-          </Dialog>
+              <OrderDatailsVideo
+                scorId={scores.id}
+                openVideo={isDetailsOpenVideo}
+              />
+            </Dialog>
+          )}
         </TableCell>
       </TableRow>
     </>

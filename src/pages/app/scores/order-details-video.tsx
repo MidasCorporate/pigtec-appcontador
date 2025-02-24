@@ -25,7 +25,7 @@ export function OrderDatailsVideo({ scorId, openVideo }: OrderDetailsProps) {
     queryFn: () => getScorDetails({ scorId }),
     enabled: openVideo,
   })
-
+  console.log('scorscorscorscor', scor)
   // if (!order) {
   //   return null
   // }
@@ -42,13 +42,17 @@ export function OrderDatailsVideo({ scorId, openVideo }: OrderDetailsProps) {
           {error ? (
             <p>Problemas para reproduzir o video!</p>
           ) : (
-            <ReactPlayer
-              style={{ maxWidth: 400, margin: 0 }}
-              url={scor.file_url}
-              controls
-              playing
-              onError={() => setError(true)}
-            />
+            scor.files.map((file) => (
+              <>
+                <ReactPlayer
+                  style={{ maxWidth: 400, margin: 0 }}
+                  url={file.file_url}
+                  controls
+                  playing
+                  onError={() => setError(true)}
+                />
+              </>
+            ))
           )}
         </div>
       ) : (

@@ -52,6 +52,7 @@ export function Orders() {
         status: status === 'all' ? null : status,
       }),
   })
+  console.log('score', result)
   function handlePaginate(page: number) {
     setSearchParams((state) => {
       state.set('page', page.toString())

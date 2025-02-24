@@ -42,6 +42,11 @@ export interface GetScorDetailsResponse {
     id: string
     name: string
   }
+  files: {
+    id: string
+    file_url: string
+    type: string
+  }[]
 }
 
 export async function getScorDetails({ scorId }: GetScorDetailsParams) {

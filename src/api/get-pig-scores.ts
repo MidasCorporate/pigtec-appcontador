@@ -47,6 +47,11 @@ export interface GetScores {
       id: string
       name: string
     }
+    files: {
+      id: string
+      file_url: string
+      type: string
+    }[]
   }[]
   pagination: {
     page: number
