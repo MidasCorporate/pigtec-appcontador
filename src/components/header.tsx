@@ -1,4 +1,4 @@
-import { ListChecksIcon, PiggyBank } from 'lucide-react'
+import { ListChecksIcon, PiggyBank, ContainerIcon } from 'lucide-react'
 
 import { AccountMenu } from './account-menu'
 import { NavLink } from './nav-link'
@@ -11,7 +11,12 @@ export function Header() {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center gap-6 px-6">
+        <div className="items-center flex justify-between">
         <PiggyBank className="h-5 w-5" />
+        <span className="m-2">
+        Pigtec
+        </span>
+        </div>
         <Separator orientation="vertical" className="h-6" />
 
         <nav className="flex items-center space-x-4 lg:space-x-6">
@@ -22,6 +27,11 @@ export function Header() {
           <NavLink to="/scors">
             <ListChecksIcon className="h-4 w-4" />
             Contagens
+          </NavLink>
+
+          <NavLink to="/equipments">
+            <ContainerIcon className="h-4 w-4" />
+            Equipamentos
           </NavLink>
         </nav>
 

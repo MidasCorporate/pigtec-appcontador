@@ -44,6 +44,7 @@ export function OrderDatailsVideo({ scorId, openVideo }: OrderDetailsProps) {
           ) : (
             scor.files.map((file) => (
               <>
+              {file.type === "video" && scor.progress !== 'happening' && (
                 <ReactPlayer
                   style={{ maxWidth: 400, margin: 0 }}
                   url={file.file_url}
@@ -51,6 +52,18 @@ export function OrderDatailsVideo({ scorId, openVideo }: OrderDetailsProps) {
                   playing
                   onError={() => setError(true)}
                 />
+              )}
+
+              {file.type === "stream" && scor.progress === 'happening' && (
+                <ReactPlayer
+                  style={{ maxWidth: 400, margin: 0 }}
+                  url={file.file_url}
+                  controls
+                  playing
+                  onError={() => setError(true)}
+                />
+              )}
+                
               </>
             ))
           )}
