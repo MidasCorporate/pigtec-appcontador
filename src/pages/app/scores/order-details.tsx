@@ -525,7 +525,7 @@ export function OrderDetails({ scorId, open }: OrderDetailsProps) {
                   {scor.file_url && (
                     <div className="qr-code-print mt-4 items-center p-0">
                       <p className="mb-3">Access the count video</p>
-                      <QRCode value={scor.file_url} size={128} />
+                      <QRCode value={scor.files[0].file_url} size={128} />
                     </div>
                   )}
                   <DialogFooter className="mt-4">
