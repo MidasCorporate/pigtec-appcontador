@@ -7,11 +7,16 @@ import { AppLayout } from './pages/_layouts/app'
 import { AuthLayout } from './pages/_layouts/auth'
 import { NotFound } from './pages/404'
 // import { Dashboard } from './pages/app/dashboard/dashboard'
-import { Equipment } from './pages/app/equipments/equipment'
-import { Orders } from './pages/app/scores/scores'
+import { Register } from './pages/app/register/register-page.tsx'
+import { RulesPermissions } from './pages/app/rules-permissions/rules-permissions'
+import { Scores } from './pages/app/scores/scores'
 import { SignIn } from './pages/auth/sign-in'
 import { SignUp } from './pages/auth/sign-up'
 import { Error } from './pages/error'
+import { Rules } from './pages/rulesPrivaci.tsx'
+import Dashboard from './pages/app/dashboard/dashboard'
+import HomeCounter from './pages/app/counter/index.tsx'
+import { PoliticLayout } from './pages/_layouts/politic.tsx'
 
 const routes: RouteObject[] = [
   {
@@ -21,15 +26,23 @@ const routes: RouteObject[] = [
     children: [
       {
         path: '/',
-        element: <ProtectedRoute element={<Orders />} />,
+        element: <ProtectedRoute element={<Dashboard />} />,
       },
       {
         path: '/scors',
-        element: <ProtectedRoute element={<Orders />} />,
+        element: <ProtectedRoute element={<Scores />} />,
       },
       {
-        path: '/equipments',
-        element: <ProtectedRoute element={<Equipment />} />,
+        path: '/registers',
+        element: <ProtectedRoute element={<Register />} />,
+      },
+      {
+        path: '/counter',
+        element: <ProtectedRoute element={<HomeCounter />} />,
+      },
+      {
+        path: '/permissions-rules',
+        element: <ProtectedRoute element={<RulesPermissions />} />,
       },
     ],
   },
@@ -44,6 +57,16 @@ const routes: RouteObject[] = [
       {
         path: '/sign-up',
         element: <AuthRoute element={<SignUp />} />,
+      }
+    ],
+  },
+  {
+    path: '/privacy',
+    element: <PoliticLayout />,
+    children: [
+       {
+        path: '/privacy',
+        element: <Rules />,
       },
     ],
   },

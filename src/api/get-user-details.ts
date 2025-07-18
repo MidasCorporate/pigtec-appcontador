@@ -10,7 +10,7 @@ export interface GetUserDetailsResponse {
 }
 
 export async function getUserDetails(id: string) {
-  const response = await api.get<GetUserDetailsResponse>(`users/show?id=${id}`)
+  const response = await api.get<GetUserDetailsResponse>(`/users/show?id=${id}`)
 
   return response.data
 }

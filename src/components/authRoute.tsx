@@ -9,7 +9,7 @@ interface AuthRouteProps {
 }
 
 const AuthRoute: React.FC<AuthRouteProps> = ({ element }) => {
-  return isAuthenticated() ? <Navigate to="/scors" /> : element
+  return isAuthenticated() ? <Navigate to="/" /> : element
 }
 
 export default AuthRoute

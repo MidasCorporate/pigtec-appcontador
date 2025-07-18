@@ -34,7 +34,7 @@ export function SignIn() {
   const { mutateAsync: authenticate } = useMutation({
     mutationFn: signIn,
     onSuccess: () => {
-      navigate('/scors')
+      navigate('/')
     },
   })
 
@@ -70,6 +70,17 @@ export function SignIn() {
               Acessar painel
             </Button>
           </form>
+          <footer className="text-center text-sm text-muted-foreground">
+            <p>
+              Acesse nossa politica de privacidade{' '}
+              <a
+                href="/privacy"
+                className="text-blue-500 hover:underline"
+              >
+                aqui
+              </a>
+            </p>
+          </footer>
         </div>
       </div>
     </>

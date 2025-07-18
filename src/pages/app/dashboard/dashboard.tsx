@@ -1,31 +1,33 @@
-import { Helmet } from 'react-helmet-async'
+"use client"
 
-import { CardDay } from './day-orders-amount-card'
-import { CardCalceled } from './month-canceled-orders-amount-card'
-import { CardAmount } from './month-orders-amount'
-import { CardRevenue } from './month-revenue-card'
-import { PopularProductsChart } from './popular-products-chart'
-import { RevenueChart } from './revenue-chart'
+import { useState } from "react"
+import { DashboardProvider } from "@/context/dashboard-context"
+import { DashboardFilters } from "./components/dashboard-filters"
+import { DashboardGrid } from "./components/dashboard-grid"
+import { AddChartDialog } from "./components/add-chart-dialog"
 
-export function Dashboard() {
+function DashboardContent() {
+  const [addChartOpen, setAddChartOpen] = useState(false)
+
   return (
-    <>
-      <Helmet title="Dashboard" />
-      <div className="flex flex-col gap-4">
-        <h1>Dashboard</h1>
-
-        <div className="grid grid-cols-4 gap-4">
-          <CardRevenue />
-          <CardAmount />
-          <CardDay />
-          <CardCalceled />
-        </div>
-
-        <div className="grid grid-cols-9 gap-4">
-          <RevenueChart />
-          <PopularProductsChart />
-        </div>
+    <div className="flex flex-col gap-6 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard BI - Contagens</h1>
       </div>
-    </>
+
+      <DashboardFilters onAddChart={() => setAddChartOpen(true)} />
+
+      <DashboardGrid />
+
+      <AddChartDialog open={addChartOpen} onOpenChange={setAddChartOpen} />
+    </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <DashboardProvider>
+      <DashboardContent />
+    </DashboardProvider>
   )
 }

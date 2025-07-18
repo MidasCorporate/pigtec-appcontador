@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-import { OrderDetailsSkeleton } from './order-details-skeleton'
+// import { OrderDetailsSkeleton } from './components/score-details-skeleton'
 
 export interface OrderDetailsProps {
   scorId: string
@@ -69,7 +69,8 @@ export function OrderDatailsVideo({ scorId, openVideo }: OrderDetailsProps) {
           )}
         </div>
       ) : (
-        <OrderDetailsSkeleton />
+        // <OrderDetailsSkeleton />
+        <></>
       )}
     </DialogContent>
   )

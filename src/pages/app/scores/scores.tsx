@@ -1,145 +1,216 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable spaced-comment */
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Helmet } from 'react-helmet-async'
-import { useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
-import { z } from 'zod'
+"use client"
 
-import { getOrders } from '@/api/get-pig-scores'
-import { UnifiqScors } from '@/api/Unifiq-scors'
-import { Pagination } from '@/components/pagination'
-import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import { Helmet } from "react-helmet-async"
+import { useNavigate, useSearchParams } from "react-router-dom"
+import { toast } from "sonner"
+import { z } from "zod"
+import { Plus, Merge, Database } from "lucide-react"
 
-import { OrderTableFilter } from './order-table-filter'
-import { OrderTableRow } from './order-table-row'
-import { OrderTableSkeleton } from './order-table-skeleton'
+import { getOrders } from "@/api/get-pig-scores"
+import { UnifiqScors } from "@/api/Unifiq-scors"
+import { Pagination } from "@/components/pagination"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export function Orders() {
+import { ScoresTable } from "./components/scores-table"
+import { ScoresFilters } from "./components/scores-filters"
+import { ScoresTableSkeleton } from "./components/scores-table-skeleton"
+import { handleVerify } from "@/api/scor/verify"
+
+export function Scores() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [arrayScores, setArrayScores] = useState<string[]>([])
+  const [selectedScores, setSelectedScores] = useState<string[]>([])
 
-  const orderId = searchParams.get('orderId')
-  const customerName = searchParams.get('customerName')
-  const status = searchParams.get('status')
+  const orderId = searchParams.get("orderId")
+  const customerName = searchParams.get("customerName")
+  const status = searchParams.get("status")
+
+   const navigate = useNavigate()
 
   const pageIndex = z.coerce
     .number()
-    .transform((page) => page + 1)
-    // .parse(searchParams.get('1'))
-    //@ts-ignore
-    .parse(searchParams.get('page' ?? '1'))
+    .transform((page) => page + 0)
+    .parse(searchParams.get("page") ?? "1")
 
   const {
     data: result,
-    isLoading: isLoadingOrders,
+    isLoading: isLoadingScores,
     refetch,
   } = useQuery({
-    queryKey: ['scors', pageIndex, orderId, customerName, status],
+    queryKey: ["scores", pageIndex, orderId, customerName, status],
     queryFn: () =>
       getOrders({
         pageIndex,
         orderId,
         customerName,
-        status: status === 'all' ? null : status,
+        status: status === "all" ? null : status,
       }),
   })
-  console.log('score', result)
+  console.log('result', result)
+  const { mutateAsync: unifyScores, isPending: isUnifying } = useMutation({
+    mutationFn: UnifiqScors,
+    onSuccess: () => {
+      refetch()
+      setSelectedScores([])
+      toast.success("Contagens unificadas com sucesso!")
+    },
+    onError: () => {
+      toast.error("Erro ao unificar contagens")
+    },
+  })
+
   function handlePaginate(page: number) {
     setSearchParams((state) => {
-      state.set('page', page.toString())
-
+      state.set("page", page.toString())
       return state
     })
   }
 
-  const { mutateAsync: joined } = useMutation({
-    mutationFn: UnifiqScors,
-    onSuccess: () => {
-      refetch()
-      toast.success('Contagem unificada!')
-    },
-  })
+  const handleUnifyScores = async () => {
+    if (selectedScores.length !== 2) {
+      toast.error("Selecione exatamente 2 contagens para unificar")
+      return
+    }
 
-  const handleUnifiqueScores = () => {
     try {
-      joined(arrayScores)
-      setArrayScores([])
-    } catch (err) {
-      console.log('eeeroorr', err)
+      await unifyScores(selectedScores)
+    } catch (error) {
+      console.error("Erro ao unificar:", error)
     }
   }
 
+
+  const {mutateAsync: handleUpdateVerify, isPending} = useMutation({
+    mutationFn: async () => handleVerify(),
+    onSuccess: () => {
+        refetch()
+        toast.success("Base atualizada!")
+      },
+    onError: (error: any) => {
+        toast.error(error.message || "Erro ao sincronizar")
+      },
+  })
+  
+  const userLanguage = navigator.language || navigator.languages[0]
+  const isPortuguese = userLanguage === "pt-BR"
+
   return (
     <>
-      <Helmet title="Contagens" />
-      <div className="flex flex-col gap-4">
-        <h1>Contagens</h1>
+      <Helmet title={isPortuguese ? "Contagens" : "Counts"} />
 
-        <div className="space-y-2.5">
-          <OrderTableFilter />
-
-          <div className={arrayScores.length > 1 ? '' : 'hidden'}>
-            <span>Unificar contagens? </span>
-            <Button
-              onClick={handleUnifiqueScores}
-              size="xs"
-              variant="destructive"
-            >
-              Unificar
-            </Button>
+      <div className="flex flex-col gap-6 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{isPortuguese ? "Contagens" : "Counts"}</h1>
+            <p className="text-muted-foreground">
+              {isPortuguese
+                ? "Gerencie e visualize todas as contagens de animais"
+                : "Manage and view all animal counts"}
+            </p>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[64px]">selec</TableHead>
-                  <TableHead className="w-[64px]"></TableHead>
-                  <TableHead className="w-[140px]">Identificador</TableHead>
-                  <TableHead className="w-[140px]">Lote</TableHead>
-                  <TableHead className="w-[180px]">Iniciado há</TableHead>
-                  <TableHead className="w-[140px]">Status</TableHead>
-                  <TableHead>Imóvel</TableHead>
-                  <TableHead className="w-[140px]">Total da contagem</TableHead>
-                  {/* <TableHead className="w-[164px]"></TableHead> */}
-                  <TableHead className="w-[132px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingOrders && <OrderTableSkeleton />}
-
-                {result &&
-                  result.scores.map((score) => {
-                    return (
-                      <OrderTableRow
-                        key={score.id}
-                        scores={score}
-                        setArrayScores={setArrayScores}
-                        arrayScores={arrayScores}
-                      />
-                    )
-                  })}
-              </TableBody>
-            </Table>
-          </div>
           {result && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-sm">
+                {result.pagination.total} {isPortuguese ? "contagens" : "counts"}
+              </Badge>
+            </div>
+          )}
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <ScoresFilters />
+          </CardContent>
+        </Card>
+
+        {/* Unify Alert */}
+        {selectedScores.length > 0 && (
+          <Alert>
+            <Merge className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                {selectedScores.length} {isPortuguese ? "contagem(ns) selecionada(s)" : "count(s) selected"}
+                {selectedScores.length === 2 && (
+                  <span className="ml-2 text-green-600">
+                    {isPortuguese ? "- Pronto para unificar" : "- Ready to unify"}
+                  </span>
+                )}
+              </span>
+              <Button
+                onClick={handleUnifyScores}
+                disabled={selectedScores.length !== 2 || isUnifying}
+                size="sm"
+                variant="destructive"
+              >
+                <Merge className="mr-2 h-4 w-4" />
+                {isUnifying ? (isPortuguese ? "Unificando..." : "Unifying...") : isPortuguese ? "Unificar" : "Unify"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Table */}
+        <Card>
+          <CardHeader className="flex-row justify-between">
+            <CardTitle className="text-lg">{isPortuguese ? "Lista de Contagens" : "Counts List"}</CardTitle>
+            <Button className="flex-row justify-center" size="sm" onClick={() => handleUpdateVerify()} disabled={isPending}>
+
+              <Database />
+              {isPortuguese ? "Atualizar dados de imagem" : "Update data of images"}
+            </Button>
+            <Button className="flex-row justify-center" size="sm" onClick={() => navigate('/counter')} disabled={isPending}>
+
+              <Database />
+              {isPortuguese ? "Nova contagem" : "New count"}
+            </Button>
+          </CardHeader>
+
+
+          <CardContent>
+            {isLoadingScores ? (
+              <ScoresTableSkeleton />
+            ) : result ? (
+              <ScoresTable
+                scores={result.scores}
+                selectedScores={selectedScores}
+                onSelectionChange={setSelectedScores}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-3 mb-4">
+                  <Plus className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">
+                  {isPortuguese ? "Nenhuma contagem encontrada" : "No counts found"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {isPortuguese
+                    ? "Não há contagens para exibir com os filtros atuais."
+                    : "There are no counts to display with the current filters."}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pagination */}
+        {result && result.pagination.total > result.pagination.take && (
+          <div className="flex justify-center">
             <Pagination
               pageIndex={result.pagination.page}
               totalCount={result.pagination.total}
               perPage={result.pagination.take}
               onPageChange={handlePaginate}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </>
   )
