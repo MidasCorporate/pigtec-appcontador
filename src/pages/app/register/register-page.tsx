@@ -6,7 +6,7 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { Helmet } from "react-helmet-async"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Plus, PiggyBank, Video } from "lucide-react"
+import { Plus, PiggyBank, Video, User } from "lucide-react"
 
 import { FarmCard } from "@/components/farms/farm-card"
 import { FarmModal } from "@/components/farms/farm-modal"
@@ -19,11 +19,18 @@ import { listFarms } from "@/api/farm/list"
 import { listConfig } from "@/api/config/list"
 import { EditFarmModal } from "./farms/modal-edit-farm"
 import { EditConfigModal } from "../../../components/equipment/modal-edit-config"
+import { listUsers } from "@/api/users/list"
+import { UserCard } from "@/components/users/user-card"
+import { UserModal } from "@/components/users/user-modal"
+import { EditUserModal } from "@/components/users/edit-user-modal"
+import { ViewUserModal } from "@/components/users/view-user-modal"
+
 
 export function Register() {
   const [activeTab, setActiveTab] = useState("farms")
   const [farmModalOpen, setFarmModalOpen] = useState(false)
   const [equipmentModalOpen, setEquipmentModalOpen] = useState(false)
+  const [userModalOpen, setUserModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
   const [editFarmModalOpen, setEditFarmModalOpen] = useState(false)
@@ -31,6 +38,12 @@ export function Register() {
 
   const [editEquipmentModalOpen, setEditEquipmentModalOpen] = useState(false)
   const [editingEquipment, setEditingEquipment] = useState<any>(null)
+
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<any>(null)
+
+  const [viewUserModalOpen, setViewUserModalOpen] = useState(false)
+  const [viewingUser, setViewingUser] = useState<any>(null)
 
   // Simulated data fetching
   const {
@@ -50,11 +63,23 @@ export function Register() {
     queryKey: ["equipment"],
     queryFn: listConfig,
   })
-  console.log('farmswwww', farms)
+  const {
+    data: users,
+    isLoading: usersLoading,
+    refetch: refetchUsers,
+  } = useQuery({
+    queryKey: ["users"],
+    queryFn: listUsers,
+  })
   const filteredFarms = farms?.filter(
     (farm) =>
       farm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       farm.nickname.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+  const filteredUsers = users?.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const filteredEquipment = equipment?.filter(
@@ -78,7 +103,7 @@ export function Register() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <TabsList className="grid w-full sm:w-auto grid-cols-2">
+              <TabsList className="grid w-full sm:w-auto grid-cols-3">
                 <TabsTrigger value="farms" className="flex items-center gap-2">
                   <PiggyBank className="h-4 w-4" />
                   Granjas
@@ -97,30 +122,64 @@ export function Register() {
                     </span>
                   )}
                 </TabsTrigger>
+
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Usuários
+                  {users && (
+                    <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {users.length}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <SearchInput
-                  placeholder={activeTab === "farms" ? "Buscar granjas..." : "Buscar equipamentos..."}
+                  placeholder={
+                    activeTab === "farms" 
+                      ? "Buscar granjas..." 
+                      : activeTab === "equipment" 
+                        ? "Buscar equipamentos..." 
+                        : "Buscar usuários..."
+                  }
                   value={searchTerm}
                   onChange={setSearchTerm}
                 />
 
                 <Dialog
-                  open={activeTab === "farms" ? farmModalOpen : equipmentModalOpen}
-                  onOpenChange={activeTab === "farms" ? setFarmModalOpen : setEquipmentModalOpen}
+                  open={
+                    activeTab === "farms" 
+                      ? farmModalOpen 
+                      : activeTab === "equipment" 
+                        ? equipmentModalOpen 
+                        : userModalOpen
+                  }
+                  onOpenChange={
+                    activeTab === "farms" 
+                      ? setFarmModalOpen 
+                      : activeTab === "equipment" 
+                        ? setEquipmentModalOpen 
+                        : setUserModalOpen
+                  }
                 >
                   <DialogTrigger asChild>
                     <Button className="flex items-center gap-2 whitespace-nowrap">
                       <Plus className="h-4 w-4" />
-                      {activeTab === "farms" ? "Nova Granja" : "Novo Equipamento"}
+                      {activeTab === "farms" 
+                        ? "Nova Granja" 
+                        : activeTab === "equipment" 
+                          ? "Novo Equipamento" 
+                          : "Novo Usuário"}
                     </Button>
                   </DialogTrigger>
 
                   {activeTab === "farms" ? (
                     <FarmModal refetch={refetchFarms} />
-                  ) : (
+                  ) : activeTab === "equipment" ? (
                     <EquipmentModal refetch={refetchEquipment} />
+                  ) : (
+                    <UserModal refetch={refetchUsers} />
                   )}
                 </Dialog>
 
@@ -147,6 +206,35 @@ export function Register() {
                         setEditingEquipment(null)
                       }}
                     />
+                  </Dialog>
+                )}
+
+                {/* Modal de edição de usuário */}
+                {editingUser && (
+                  <Dialog open={editUserModalOpen} onOpenChange={setEditUserModalOpen}>
+                    <EditUserModal
+                      user={editingUser}
+                      refetch={refetchUsers}
+                      onClose={() => {
+                        setEditUserModalOpen(false)
+                        setEditingUser(null)
+                      }}
+                    />
+                  </Dialog>
+                )}
+
+                {/* Modal de visualização de usuário */}
+                {viewingUser && (
+                  <Dialog 
+                    open={viewUserModalOpen} 
+                    onOpenChange={(open) => {
+                      setViewUserModalOpen(open)
+                      if (!open) {
+                        setViewingUser(null)
+                      }
+                    }}
+                  >
+                    <ViewUserModal user={viewingUser} />
                   </Dialog>
                 )}
               </div>
@@ -195,14 +283,15 @@ export function Register() {
                   action={
                     !searchTerm
                       ? {
-                          label: "Criar Granja",
-                          onClick: () => setFarmModalOpen(true),
-                        }
+                        label: "Criar Granja",
+                        onClick: () => setFarmModalOpen(true),
+                      }
                       : undefined
                   }
                 />
               )}
             </TabsContent>
+
 
             <TabsContent value="equipment" className="space-y-4">
               {equipmentLoading ? (
@@ -225,32 +314,32 @@ export function Register() {
                       onEdit={(id) => {
                         const equipt = equipment?.find((f) => f.id === id)
                         if (equipt) {
-                              setEditingEquipment({
-                              id: equipt.id,
-                              rout: equipt.rout,
-                              cfg: equipt.cfg,
-                              name: equipt.name,
-                              names: equipt.names,
-                              weights: equipt.weights,
-                              rout_view_video: equipt.rout_view_video,
-                              mount_video: equipt.mount_video,
-                              range_for_marking: equipt.range_for_marking,
-                              marking_automatic: equipt.marking_automatic,
-                              is_selected_view_video: equipt.is_selected_view_video,
-                              name_network_contactor: equipt.name_network_contactor,
-                              pass_word_contactor_network: equipt.pass_word_contactor_network,
-                              description: equipt.description,
-                              threshold: equipt.threshold,
-                              access_remote_id: equipt.access_remote_id,
-                              access_remote_password: equipt.access_remote_password,
-                              stream: equipt.stream,
-                              })
+                          setEditingEquipment({
+                            id: equipt.id,
+                            rout: equipt.rout,
+                            cfg: equipt.cfg,
+                            name: equipt.name,
+                            names: equipt.names,
+                            weights: equipt.weights,
+                            rout_view_video: equipt.rout_view_video,
+                            mount_video: equipt.mount_video,
+                            range_for_marking: equipt.range_for_marking,
+                            marking_automatic: equipt.marking_automatic,
+                            is_selected_view_video: equipt.is_selected_view_video,
+                            name_network_contactor: equipt.name_network_contactor,
+                            pass_word_contactor_network: equipt.pass_word_contactor_network,
+                            description: equipt.description,
+                            threshold: equipt.threshold,
+                            access_remote_id: equipt.access_remote_id,
+                            access_remote_password: equipt.access_remote_password,
+                            stream: equipt.stream,
+                          })
                           setEditEquipmentModalOpen(true)
                         }
                       }}
                       onDelete={(id) => console.log("Delete equipment:", id)}
                       onView={(id) => console.log("View equipment:", id)}
-                      // onTerminal={(id) => console.log("Terminal equipment:", id)}
+                    // onTerminal={(id) => console.log("Terminal equipment:", id)}
                     />
                   ))}
                 </div>
@@ -264,9 +353,67 @@ export function Register() {
                   action={
                     !searchTerm
                       ? {
-                          label: "Adicionar Equipamento",
-                          onClick: () => setEquipmentModalOpen(true),
+                        label: "Adicionar Equipamento",
+                        onClick: () => setEquipmentModalOpen(true),
+                      }
+                      : undefined
+                  }
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="users" className="space-y-4">
+              {usersLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <LoadingSpinner size="lg" />
+                </div>
+              ) : filteredUsers && filteredUsers.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredUsers.map((user) => (
+                    <UserCard
+                      key={user.id}
+                      id={user.id}
+                      name={user.name}
+                      email={user.email}
+                      cpf={user.cpf}
+                      internal_code={user.internal_code}
+                      created_at={user.created_at}
+                      onEdit={(id) => {
+                        const user = filteredUsers?.find((u) => u.id === id)
+                        if (user) {
+                          setEditingUser({
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            cpf: user.cpf,
+                            internal_code: user.internal_code,
+                            config_id: user.config_id,
+                          })
+                          setEditUserModalOpen(true)
                         }
+                      }}
+                      onDelete={(id) => console.log("Delete user:", id)}
+                      onView={(id) => {
+                        const user = filteredUsers?.find((u) => u.id === id)
+                        if (user) {
+                          setViewingUser(user)
+                          setViewUserModalOpen(true)
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={User}
+                  title="Nenhum usuário encontrado"
+                  description={searchTerm ? "Tente ajustar os filtros de busca" : "Comece criando seu primeiro usuário"}
+                  action={
+                    !searchTerm
+                      ? {
+                        label: "Criar Usuário",
+                        onClick: () => setUserModalOpen(true),
+                      }
                       : undefined
                   }
                 />

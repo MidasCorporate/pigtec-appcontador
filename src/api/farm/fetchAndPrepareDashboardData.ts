@@ -1,9 +1,7 @@
 import { DashboardFilters } from "@/context/dashboard-context"
-import { useQuery } from "@tanstack/react-query"
-import { differenceInDays, isWithinInterval, parseISO } from "date-fns"
-import { listFarms } from "./list"
-import { listScors, Scor } from "../scor/list"
-import { api } from "@/services/api"
+import { isWithinInterval, parseISO } from "date-fns"
+import { listScors,  } from "../scor/list"
+import { showScors } from "../scor/show"
 
 // Add or import the OperationDetails type
 type OperationDetails = {
@@ -17,36 +15,45 @@ type OperationDetails = {
   // Add other properties as needed
 }
 
-export async function fetchAndPrepareDashboardData(filters: DashboardFilters) {
+export async function fetchAndPrepareDashboardData(filters: DashboardFilters, admin?: boolean, config_id?: string) {
   // const res = await fetch("https://node.pigtek.com.br/scores")
   // const allOperations: OperationDetails[] = await res.json()
-  const allOperations = await listScors()
+  const allOperations = admin === false
+    ? await showScors(config_id)
+    : await listScors()
   const filtered = (allOperations ?? []).filter((op) => {
-  const date = parseISO(op.start_date)
+    const date = parseISO(op.start_date)
 
-  const isInDateRange =
-    filters.dateRange !== undefined &&
-    filters.dateRange.from !== undefined &&
-    filters.dateRange.to !== undefined &&
-    isWithinInterval(date, {
-      start: filters.dateRange.from,
-      end: filters.dateRange.to,
-    })
+    const isInDateRange =
+      filters.dateRange !== undefined &&
+      filters.dateRange.from !== undefined &&
+      filters.dateRange.to !== undefined &&
+      isWithinInterval(date, {
+        start: filters.dateRange.from,
+        end: filters.dateRange.to,
+      })
 
-  const isFarmSelected =
-    filters.selectedFarms.length === 0 ||
-    filters.selectedFarms.includes(op.farm_id_sender)
+    const isFarmSelected =
+      filters.selectedFarms.length === 0 ||
+      filters.selectedFarms.includes(op.farm_id_sender)
 
-  const isStatusValid =
-    filters.status === "all" ||
-    (filters.status === "finalized" && op.progress === "finalized") ||
-    (filters.status === "pending" && op.progress !== "finalized") || (filters.status === "happening" && op.progress !== "happening")
+    const isStatusValid =
+      filters.status === "all" ||
+      (filters.status === "finalized" && op.progress === "finalized") ||
+      (filters.status === "pending" && op.progress !== "finalized") || (filters.status === "happening" && op.progress !== "happening")
 
-  const isCountTypeValid =
-    filters.countType === "all" || op.name === filters.countType
+    const isCountTypeValid =
+      filters.countType === "all" || op.name === filters.countType
 
-  return isInDateRange && isFarmSelected && isStatusValid && isCountTypeValid
-})
+    // If admin is false, you can add custom filtering logic here
+    if (admin === false) {
+      // Example: filter out operations with a certain property
+      // return isInDateRange && isFarmSelected && isStatusValid && isCountTypeValid && op.isPublic;
+      // Remove or customize as needed
+    }
+
+    return isInDateRange && isFarmSelected && isStatusValid && isCountTypeValid
+  })
   // === 1. Métrica: Total de contagens no mês ===
   const monthCountsAmount: MetricCard = {
     amount: filtered.length,
@@ -89,24 +96,24 @@ export async function fetchAndPrepareDashboardData(filters: DashboardFilters) {
     farm,
     amount,
   }))
- // === 5. Contagens diárias (somando o quantity de cada operação) ===
-const dailyMap = new Map<string, number>()
+  // === 5. Contagens diárias (somando o quantity de cada operação) ===
+  const dailyMap = new Map<string, number>()
 
-filtered.forEach((op) => {
-  const date = parseISO(op.start_date)
-  const formatted = date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
+  filtered.forEach((op) => {
+    const date = parseISO(op.start_date)
+    const formatted = date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+    })
+
+    const quantity = parseInt(op.quantity || "0", 10)
+    dailyMap.set(formatted, (dailyMap.get(formatted) || 0) + quantity)
   })
 
-  const quantity = parseInt(op.quantity || "0", 10)
-  dailyMap.set(formatted, (dailyMap.get(formatted) || 0) + quantity)
-})
-
-const dailyCountsInPeriod: DailyCount[] = Array.from(dailyMap.entries()).map(([date, counts]) => ({
-  date,
-  counts,
-}))
+  const dailyCountsInPeriod: DailyCount[] = Array.from(dailyMap.entries()).map(([date, counts]) => ({
+    date,
+    counts,
+  }))
   // === 6. Total de fazendas ativas ===
   const activeFarms = new Set<string>()
   filtered.forEach((op) => {
@@ -121,10 +128,10 @@ const dailyCountsInPeriod: DailyCount[] = Array.from(dailyMap.entries()).map(([d
   }
 
   // === 7 Total de animais contados no período ===
-const totalCountedInPeriod: MetricCard = {
-  amount: filtered.reduce((sum, op) => sum + parseInt(op.quantity || "0", 10), 0),
-  diffFromLastMonth: 0,
-}
+  const totalCountedInPeriod: MetricCard = {
+    amount: filtered.reduce((sum, op) => sum + parseInt(op.quantity || "0", 10), 0),
+    diffFromLastMonth: 0,
+  }
 
   return {
     monthCountsAmount,
@@ -133,6 +140,7 @@ const totalCountedInPeriod: MetricCard = {
     dailyCountsInPeriod,
     averageCountsPerFarm,
     activeFarmsAmount,
-    totalCountedInPeriod
+    totalCountedInPeriod,
+    admin // adicionando a propriedade admin ao retorno
   }
 }

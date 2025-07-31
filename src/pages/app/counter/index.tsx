@@ -15,6 +15,7 @@ export interface CountingData {
   balance: "online" | "offline"
   typeContage: "carregamento" | "desmame" | "teste"
   type: "destination_with_count" | "simple_count"
+  isEggCounting?: boolean
 }
 
 export default function HomeCounter() {

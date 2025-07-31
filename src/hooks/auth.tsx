@@ -18,11 +18,13 @@ export interface UserInterface {
   id: string
   name: string
   email: string
+  config_id?: string
 }
 
 interface AuthState {
   token: string
   user: UserInterface
+  roles?: [string]
 }
 
 interface SignInCredentials {
@@ -31,6 +33,7 @@ interface SignInCredentials {
 
 interface AuthContextData {
   user: UserInterface
+  roles?: [string]
   // eslint-disable-next-line no-unused-vars
   signIn(credentials: SignInCredentials): Promise<void>
   signOut(): any
@@ -49,27 +52,32 @@ const AuthProvider: FunctionComponent<Props> = ({ children }) => {
   const [data, setData] = useState<AuthState>(() => {
     const token = localStorage.getItem('@pigtek:token')
     const user = localStorage.getItem('@pigtek:user')
+    const roles = localStorage.getItem('@pigtek:roles')
 
     if (token && user) {
       api.defaults.headers.authorization = `Bearer ${token}`
-      return { token, user: JSON.parse(user) }
+      return { 
+        token, 
+        user: JSON.parse(user || '{}'), 
+        roles: JSON.parse(roles || '[]') 
+      }
     }
 
     return {} as AuthState
   })
 
   useEffect(() => {
-    if (data.token !== undefined) {
-      api
-        .get(`users/show?id=${data.user.id}`)
-        .then((response: { data: UserInterface }) => {
-          setData({ token: data.token, user: response.data })
-        })
-        .catch(() => {
-          console.log('deu erro')
-          signOut()
-        })
-    }
+    // if (data.token !== undefined) {
+    //   api
+    //   .get(`users/show?id=${data.user.id}`)
+    //   .then((response: { data: UserInterface }) => {
+    //     setData({ token: data.token, user: response.data })
+    //   })
+    //     .catch(() => {
+    //       console.log('deu erro')
+    //       signOut()
+    //     })
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -77,21 +85,24 @@ const AuthProvider: FunctionComponent<Props> = ({ children }) => {
     const response = await api.post('sessions', {
       email,
     })
-    const { token, refresh_token, user } = response.data
+    console.log('response', response.data)
+    const { token, refresh_token, user, roles } = response.data
     localStorage.setItem('@pigtek:token', token)
 
     localStorage.setItem('@pigtek:refresh_token', refresh_token)
     localStorage.setItem('@pigtek:user', JSON.stringify(user))
+    localStorage.setItem('@pigtek:roles', JSON.stringify(roles))
 
     api.defaults.headers.authorization = `Bearer ${token}`
 
-    setData({ token, user })
+    setData({ token, user, roles })
   }, [])
 
   const signOut = useCallback(async () => {
     localStorage.removeItem('@pigtek:token')
     localStorage.removeItem('@pigtek:refresh_token')
     localStorage.removeItem('@pigtek:user')
+    localStorage.removeItem('@pigtek:roles')
 
     // await authChannels.postMessage('signOut');
 
@@ -116,14 +127,15 @@ const AuthProvider: FunctionComponent<Props> = ({ children }) => {
       setData({
         token: data.token,
         user,
+        roles: data.roles,
       })
     },
-    [setData, data.token],
+    [setData, data.token, data.roles],
   )
-
+  console.log('AuthProvider', data)
   return (
     <AuthContext.Provider
-      value={{ user: data.user, signIn, signOut, updateUser }}
+      value={{ user: data.user, roles: data.roles, signIn, signOut, updateUser }}
     >
       {children}
     </AuthContext.Provider>

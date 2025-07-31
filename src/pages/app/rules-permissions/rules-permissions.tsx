@@ -20,6 +20,7 @@ import { listRole } from "@/api/role/list"
 import { listPermission } from "@/api/permission/list"
 import { useEditFarmRoleModal } from "@/hooks/use-edit-farm-role-modal"
 import { toast } from "sonner"
+import { LinkRuleUserModal } from "./modal-link-rule-user"
 
 export function RulesPermissions() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -141,10 +142,20 @@ export function RulesPermissions() {
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
                 <Shield className="h-4 w-4 mr-2" />
-                Vincular com Farm
+                Vincular com farm app
               </Button>
             </DialogTrigger>
             <LinkRuleFarmModal refetchRules={refetchRules} />
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Shield className="h-4 w-4 mr-2" />
+                Vincular com usuário web
+              </Button>
+            </DialogTrigger>
+            <LinkRuleUserModal refetchRules={refetchRules} />
           </Dialog>
 
           <Dialog>

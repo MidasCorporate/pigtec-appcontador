@@ -1,15 +1,20 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { ArrowLeft, Camera, Play, FlagIcon, Square, Trash2, Save, RotateCcw, Plus, Minus } from "lucide-react"
+import { ArrowLeft, Camera, Play, FlagIcon, Square, Trash2, Save, RotateCcw, Plus, Minus, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useQuery } from "@tanstack/react-query"
 import type { CountingData } from "../index"
 import { CounterDisplay } from "./counter-display"
 import { FlagsList } from "./flags-list"
 import { ModalWeight } from "./modal-weight"
 import { CameraModal } from "./camera-modal"
 import { useToast } from "@/hooks/use-toast"
+import { showConfig } from "@/api/config/show"
+import axios from "axios"
+import { api } from "@/services/api"
+import { EggStatistics } from "./egg-statistics"
 
 interface CountState {
   total: number
@@ -20,18 +25,28 @@ interface CountState {
 }
 
 interface Config {
+  id: string
   rout: string
   cfg: string
+  name: string
   names: string
   weights: string
-  routViewVideo: string
-  mountVideo: string
-  isSelectedViewVideo: boolean
-  markingAutomatic: "not" | "yes"
-  rangeForMarking: string
+  rout_view_video: string
+  mount_video: string
+  is_selected_view_video: string
+  marking_automatic: string
+  range_for_marking: string
   threshold: string
   stream: boolean
-  viewCamera: boolean
+  view_camera: boolean
+  description: string
+  // Legacy fields for backward compatibility
+  routViewVideo?: string
+  mountVideo?: string
+  isSelectedViewVideo?: boolean
+  markingAutomatic?: "not" | "yes"
+  rangeForMarking?: string
+  viewCamera?: boolean
 }
 
 interface Counting {
@@ -74,11 +89,41 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
   const [loadingSave, setLoadingSave] = useState(false)
   const [coutingId, setCoutingId] = useState("")
   const [loteFormated, setLotFormated] = useState("")
-  const [dataConfig, setDataConfigs] = useState<Config>()
+  const [dataConfig, setDataConfigs] = useState<Config | null>(null)
   const [url, setUrl] = useState("")
+  const [countingStartTime, setCountingStartTime] = useState<Date | null>(null)
 
   const socket = useRef<WebSocket | null>(null)
   const sexRef = useRef(sex)
+
+  // Get config_id from localStorage
+  const getConfigId = () => {
+    const userData = localStorage.getItem("@pigtek:user")
+    if (userData) {
+      try {
+        const user = JSON.parse(userData)
+        return user.config_id
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+        return null
+      }
+    }
+    return null
+  }
+
+  // Fetch configuration from API
+  const { data: configData, isLoading: configLoading, error: configError } = useQuery({
+    queryKey: ["config", getConfigId()],
+    queryFn: () => {
+      const configId = getConfigId()
+      if (!configId) {
+        throw new Error("No config_id found in localStorage")
+      }
+      return showConfig({ config_id: configId })
+    },
+    enabled: !!getConfigId(),
+    retry: 1
+  })
 
   useEffect(() => {
     sexRef.current = sex
@@ -86,36 +131,87 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
 
   useEffect(() => {
     handleVerifyLot()
-    loadConfigurations()
   }, [data.lote])
 
-  const loadConfigurations = () => {
-    // Load configurations from localStorage (replacing AsyncStorage)
-    const savedConfig = localStorage.getItem("@DataConfig")
-    const savedRoute = localStorage.getItem("@DataConfigRoute")
+  // Effect to handle configuration data from API
+  useEffect(() => {
+    if (configData) {
+      loadConfigurations(configData)
+    }
+    // else if (configError) {
+    //   // Fallback to localStorage or default config if API fails
+    //   loadConfigurationsFromStorage()
+    // }
+  }, [configData, configError])
 
-    if (savedConfig && savedRoute) {
-      const configData: Config = JSON.parse(savedConfig)
-      setDataConfigs(configData)
-      setUrl(`http://${savedRoute.slice(0, -5)}:8080/bgr`)
-    } else {
-      // Default configuration
-      setDataConfigs({
-        rout: "",
-        cfg: "default.cfg",
-        names: "names.txt",
-        weights: "weights.txt",
-        routViewVideo: "/videos",
-        mountVideo: "/mount",
-        isSelectedViewVideo: false,
-        markingAutomatic: "not",
-        rangeForMarking: "10",
-        threshold: "0.5",
-        stream: true,
-        viewCamera: true,
-      })
+  const loadConfigurations = (apiConfig: Config) => {
+    // Transform API config to internal format with backward compatibility
+    const transformedConfig: Config = {
+      ...apiConfig,
+      // Map new field names to legacy ones for backward compatibility
+      routViewVideo: apiConfig.rout_view_video,
+      mountVideo: apiConfig.mount_video,
+      isSelectedViewVideo: apiConfig.is_selected_view_video === "true" || apiConfig.is_selected_view_video === "1",
+      markingAutomatic: apiConfig.marking_automatic === "yes" ? "yes" : "not",
+      rangeForMarking: apiConfig.range_for_marking,
+      viewCamera: apiConfig.view_camera,
+    }
+    console.log("Loaded configuration:", transformedConfig)
+    setDataConfigs(transformedConfig)
+
+    // Set URL based on route from config
+    if (apiConfig.rout) {
+      setUrl(`http://${apiConfig.rout.slice(0, -5)}:8080/bgr`)
     }
   }
+
+  // const loadConfigurationsFromStorage = () => {
+  //   // Fallback: Load configurations from localStorage
+  //   const savedConfig = localStorage.getItem("@DataConfig")
+  //   const savedRoute = localStorage.getItem("@DataConfigRoute")
+
+  //   if (savedConfig && savedRoute) {
+  //     try {
+  //       const configData: Config = JSON.parse(savedConfig)
+  //       setDataConfigs(configData)
+  //       setUrl(`http://${savedRoute.slice(0, -5)}:8080/bgr`)
+  //     } catch (error) {
+  //       console.error("Error parsing saved config:", error)
+  //       setDefaultConfiguration()
+  //     }
+  //   } else {
+  //     setDefaultConfiguration()
+  //   }
+  // }
+
+  // const setDefaultConfiguration = () => {
+  //   // Default configuration
+  //   const defaultConfig: Config = {
+  //     id: "",
+  //     rout: "",
+  //     cfg: "default.cfg",
+  //     name: "Default Configuration",
+  //     names: "names.txt",
+  //     weights: "weights.txt",
+  //     rout_view_video: "/videos",
+  //     mount_video: "/mount",
+  //     is_selected_view_video: "false",
+  //     marking_automatic: "not",
+  //     range_for_marking: "10",
+  //     threshold: "0.5",
+  //     stream: true,
+  //     view_camera: true,
+  //     description: "Default configuration",
+  //     // Legacy fields
+  //     routViewVideo: "/videos",
+  //     mountVideo: "/mount",
+  //     isSelectedViewVideo: false,
+  //     markingAutomatic: "not",
+  //     rangeForMarking: "10",
+  //     viewCamera: true,
+  //   }
+  //   setDataConfigs(defaultConfig)
+  // }
 
   const handleVerifyLot = async () => {
     if (textHeader === "Pronto para iniciar") {
@@ -152,7 +248,9 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
 
   const createWebSocket = async () => {
     try {
-      const route = localStorage.getItem("@DataConfigRoute")
+      // Use route from API config or fallback to localStorage
+      const route = dataConfig?.rout
+      console.log('Creating WebSocket with route:', route)
       if (route && route !== "") {
         socket.current = new WebSocket(`ws://${route}/`)
 
@@ -249,24 +347,25 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
 
   const handleStartProgram = async () => {
     try {
-      const idScores = `counting-${Date.now()}`
+      const idScores = crypto.randomUUID()
       setLoadingRoud(true)
       setCoutingId(idScores)
+      setCountingStartTime(new Date())
 
-      const balanceOk = await checkBalance()
-      if (!balanceOk) return
+      // const balanceOk = await checkBalance()
+      // if (!balanceOk) return
 
       const scoreData = {
         id: idScores,
-        producer_id_internal: "user_producer_id",
-        farm_id_internal: "user_id",
+        // producer_id_internal: "user_producer_id",
+        // farm_id_internal: "user_id",
         type: data.type,
         lote: loteFormated,
         name: data.name,
-        producer_id_sender: "user_producer_id",
-        farm_id_sender: "user_id",
-        producer_id_received: data.productorid || null,
-        farm_id_received: data.farmId || null,
+        // producer_id_sender: "user_producer_id",
+        // farm_id_sender: "user_id",
+        // producer_id_received: data.productorid || null,
+        // farm_id_received: data.farmId || null,
         progress: "not_found",
         quantity: 0,
         weight: "0",
@@ -280,30 +379,76 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
       }
 
       // Simulate API call to start counting
-      try {
-        const response = await fetch("/api/spawn", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
+      // if (balance === 'online') {
+      //   try {
+      //     await api.get('/activitie-balance').then((res) => {
+      //       console.log('RESPOSTA: ', res)
+      //     })
+      //   } catch (err) {
+      //     console.log('Erro handleRoudProgram:', err);
+      //     Alert.alert('Falha na balança', 'Verifique a conexão com a balança!.');
+      //     setLoadingRoud(false);
+      //     return;
+      //   }
+      // }
+
+      await axios
+        .get(`http://${dataConfig?.rout}/spawn`, {
+          params: {
+            cfg: dataConfig?.cfg,
+            names: dataConfig?.names,
+            weights: dataConfig?.weights,
+            saveVideo: dataConfig?.isSelectedViewVideo,
+            roteViewVideo: dataConfig?.routViewVideo,
+            mountVideo: dataConfig?.mountVideo,
+            // scaleRout: dataConfig?.scaleRout,
+            threshold: dataConfig?.threshold,
+            stream: dataConfig?.stream,
+            typeContage: data.typeContage,
+            qtdCurrent: 0,
+            viewCamera: dataConfig?.viewCamera,
+
+            balance: data.balance,
+            idScores,
           },
         })
 
-        if (response.ok) {
-          // Save score locally
-          const existingScores = JSON.parse(localStorage.getItem("@Scores") || "[]")
-          existingScores.push(scoreData)
-          localStorage.setItem("@Scores", JSON.stringify(existingScores))
+        .then(async (response) => {
+          try {
+            if (response.status === 200) {
+              // storageScorsSave({
+              //   ...scoreData,
+              //   male: "0",
+              //   female: "0"
+              // })
+              // if (digitalOnline) {
+              //   console.log('2-Salvando no banco online')
+              await api
+                .post('/scores', scoreData)
 
-          setTextHeader("Contagem em andamento")
-          createWebSocket()
-        }
-      } catch (err) {
-        console.log("Erro handleStartProgram: ", err)
-        // Save locally even if API fails
-        const existingScores = JSON.parse(localStorage.getItem("@Scores") || "[]")
-        existingScores.push({ ...scoreData, status: false })
-        localStorage.setItem("@Scores", JSON.stringify(existingScores))
-      }
+              //       handleSaveLocal({ score });
+              //       setTimeout(async () => {
+              //         await axios.get('https://node.pigtek.com.br/scores/validate');
+              //       }, 3000)
+              //     });
+            }
+            //  else {
+            //   handleSaveLocal(scoreData);
+            // }
+
+
+          } catch (err) {
+            console.log('Erro handleRoudProgram: ', err)
+            // const score = {
+            //   ...scoreData.score,
+            //   status: false,
+            // };
+            // handleSaveLocal({ score });
+          }
+        });
+      createWebSocket();
+
+
     } catch (err) {
       toast({
         title: "Falha na conexão",
@@ -318,15 +463,14 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
 
   const handleStopProgram = async () => {
     try {
-      const response = await fetch("/api/terminateProgram", {
-        method: "POST",
+      await axios.post(`http://${dataConfig?.rout}/terminateProgram`).then((res) => {
+        if (res.status === 200) {
+          setTextHeader("Contagem finalizada")
+          setIsLoading(false)
+          setLoadingRoud(false)
+        }
       })
 
-      if (response.ok) {
-        setTextHeader("Contagem finalizada")
-        setIsLoading(false)
-        setLoadingRoud(false)
-      }
     } catch (err) {
       console.log("err", err)
       // Fallback to local state change
@@ -357,6 +501,19 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
         female: String(countState.female),
       }
 
+      try {
+        await api
+          .put(`/scores?id=${coutingId}`, dataScore)
+
+
+        await api.post(
+          `/markings/createAll`,
+          flagsData
+        );
+      } catch (err) {
+        console.log("Erro ao atualizar dados:", err);
+      }
+
       // Update score in localStorage
       const existingScores = JSON.parse(localStorage.getItem("@Scores") || "[]")
       const updatedScores = existingScores.map((score: any) => {
@@ -378,6 +535,7 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
         female: 0,
         male: 0,
       })
+      setCountingStartTime(null)
 
       toast({
         title: "Contagem salva",
@@ -417,6 +575,7 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
           female: 0,
           male: 0,
         })
+        setCountingStartTime(null)
         setLoadingRoud(false)
 
         toast({
@@ -441,13 +600,24 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
       setLoadingRoud(true)
       setLoadingSave(true)
 
-      // Simulate API call to continue counting
-      const response = await fetch("/api/spawn", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+      await axios
+        .get(`http://${dataConfig?.rout}/spawn`, {
+          params: {
+            cfg: dataConfig?.cfg,
+            names: dataConfig?.names,
+            weights: dataConfig?.weights,
+            saveVideo: dataConfig?.isSelectedViewVideo,
+            roteViewVideo: dataConfig?.routViewVideo,
+            mountVideo: dataConfig?.mountVideo,
+            threshold: dataConfig?.threshold,
+            stream: dataConfig?.stream,
+            typeContage: data.typeContage,
+            qtdCurrent: countState.acumuled,
+            viewCamera: dataConfig?.viewCamera,
+            balance: data.balance,
+            idScores: coutingId,
+          },
+        })
 
       setTextHeader("Contagem em andamento")
       createWebSocket()
@@ -456,6 +626,23 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
     } finally {
       setLoadingRoud(false)
       setLoadingSave(false)
+    }
+  }
+
+  const handleResetEggCountsToday = () => {
+    try {
+      localStorage.removeItem("@EggCountsToday")
+      toast({
+        title: "Reset realizado",
+        description: "Contagens de ovos do dia foram resetadas!",
+      })
+    } catch (error) {
+      console.error("Error resetting egg counts:", error)
+      toast({
+        title: "Erro",
+        description: "Erro ao resetar contagens do dia!",
+        variant: "destructive",
+      })
     }
   }
 
@@ -490,7 +677,7 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
 
   const handleCreateFlag = async () => {
     try {
-      const idMarkings = `flag-${Date.now()}`
+      const idMarkings = crypto.randomUUID()
       if (countState.total >= 0) {
         const newFlag = {
           quantity: countState.current,
@@ -545,8 +732,9 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
 
   // Automatic marking effect
   useEffect(() => {
-    if (dataConfig?.markingAutomatic === "yes") {
-      if (countState.total % Number(dataConfig.rangeForMarking) === 0 && countState.total > 0) {
+    if (dataConfig?.markingAutomatic === "yes" || dataConfig?.marking_automatic === "yes") {
+      const rangeForMarking = dataConfig.rangeForMarking || dataConfig.range_for_marking
+      if (rangeForMarking && countState.total % Number(rangeForMarking) === 0 && countState.total > 0) {
         handleCreateFlag()
       }
     }
@@ -600,21 +788,51 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex-1" />
-            {dataConfig?.viewCamera && (
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={textHeader !== "Contagem em andamento"}
-                onClick={() => setCameraVisible(true)}
-              >
-                <Camera className="h-5 w-5" />
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {data.isEggCounting && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleResetEggCountsToday}
+                  title="Reset contagens do dia"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              )}
+              {(dataConfig?.viewCamera || dataConfig?.view_camera) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={textHeader !== "Contagem em andamento"}
+                  onClick={() => setCameraVisible(true)}
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl">
+        {configLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span>Carregando configuração...</span>
+            </div>
+          </div>
+        )}
+
+        {configError && !dataConfig && (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <p className="text-red-600 mb-2">Erro ao carregar configuração</p>
+              <p className="text-sm text-muted-foreground">Usando configuração padrão</p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6">
           {/* Project Info */}
           {data.type === "destination_with_count" && (
@@ -641,6 +859,15 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
             />
           </div>
 
+          {/* Egg Statistics - Only show for egg counting */}
+          {data.isEggCounting && (
+            <EggStatistics 
+              totalCount={countState.acumuled} 
+              startTime={countingStartTime}
+              estimatedQuantity={data.qtdCounting}
+            />
+          )}
+
           {/* Weight Display */}
           {data.balance === "online" && (
             <div className="flex justify-center">
@@ -649,26 +876,39 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
           )}
 
           {/* Statistics */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-2xl font-bold">{countState.acumuled}</p>
-                <p className="text-sm text-muted-foreground">Total</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-2xl font-bold">{countState.male}</p>
-                <p className="text-sm text-muted-foreground">♂ Machos</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-2xl font-bold">{countState.female}</p>
-                <p className="text-sm text-muted-foreground">♀ Fêmeas</p>
-              </CardContent>
-            </Card>
-          </div>
+          {data.isEggCounting ? (
+            /* Para contagem de ovos, mostrar apenas o total */
+            <div className="flex justify-center">
+              <Card className="w-full max-w-xs">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-3xl font-bold text-primary">{countState.acumuled.toLocaleString('pt-BR')}</p>
+                  <p className="text-sm text-muted-foreground">Total de Ovos</p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            /* Para outras contagens, mostrar total, machos e fêmeas */
+            <div className="grid grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-2xl font-bold">{countState.acumuled}</p>
+                  <p className="text-sm text-muted-foreground">Total</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-2xl font-bold">{countState.male}</p>
+                  <p className="text-sm text-muted-foreground">♂ Machos</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-2xl font-bold">{countState.female}</p>
+                  <p className="text-sm text-muted-foreground">♀ Fêmeas</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Flags List */}
           <FlagsList flags={flagsData} onFlagPress={handleOpenModal} onFlagDelete={handleDeleteFlag} />
@@ -682,13 +922,16 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
                     <Minus className="h-6 w-6" />
                   </Button>
 
-                  <Button
-                    variant={sex === "male" ? "default" : "outline"}
-                    onClick={toggleSex}
-                    className="min-w-[120px]"
-                  >
-                    {sex === "male" ? "Macho" : "Fêmea"}
-                  </Button>
+                  {/* Só mostrar seleção de sexo se não for contagem de ovos */}
+                  {!data.isEggCounting && (
+                    <Button
+                      variant={sex === "male" ? "default" : "outline"}
+                      onClick={toggleSex}
+                      className="min-w-[120px]"
+                    >
+                      {sex === "male" ? "Macho" : "Fêmea"}
+                    </Button>
+                  )}
 
                   <Button variant="outline" size="lg" onClick={() => handleSetQuantityCount("add")}>
                     <Plus className="h-6 w-6" />
@@ -705,7 +948,12 @@ export function CountingScreen({ data, onReturn }: CountingScreenProps) {
         <div className="container mx-auto max-w-4xl">
           <div className="flex justify-center gap-4">
             {textHeader === "Pronto para iniciar" && (
-              <Button onClick={handleStartProgram} disabled={loadingRoud} size="lg" className="min-w-[120px]">
+              <Button
+                onClick={handleStartProgram}
+                disabled={loadingRoud || configLoading || !dataConfig}
+                size="lg"
+                className="min-w-[120px]"
+              >
                 {loadingRoud ? (
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

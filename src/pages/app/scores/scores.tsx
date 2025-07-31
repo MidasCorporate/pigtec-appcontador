@@ -6,7 +6,7 @@ import { Helmet } from "react-helmet-async"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import { z } from "zod"
-import { Plus, Merge, Database } from "lucide-react"
+import { Plus, Merge, RefreshCw } from "lucide-react"
 
 import { getOrders } from "@/api/get-pig-scores"
 import { UnifiqScors } from "@/api/Unifiq-scors"
@@ -33,7 +33,7 @@ export function Scores() {
 
   const pageIndex = z.coerce
     .number()
-    .transform((page) => page + 0)
+    .transform((page) => page - 1)
     .parse(searchParams.get("page") ?? "1")
 
   const {
@@ -44,7 +44,7 @@ export function Scores() {
     queryKey: ["scores", pageIndex, orderId, customerName, status],
     queryFn: () =>
       getOrders({
-        pageIndex,
+        pageIndex: pageIndex + 1, // Convert back to 1-based for API
         orderId,
         customerName,
         status: status === "all" ? null : status,
@@ -65,7 +65,7 @@ export function Scores() {
 
   function handlePaginate(page: number) {
     setSearchParams((state) => {
-      state.set("page", page.toString())
+      state.set("page", (page + 1).toString())
       return state
     })
   }
@@ -114,13 +114,31 @@ export function Scores() {
             </p>
           </div>
 
-          {result && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {result && (
               <Badge variant="secondary" className="text-sm">
                 {result.pagination.total} {isPortuguese ? "contagens" : "counts"}
               </Badge>
-            </div>
-          )}
+            )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleUpdateVerify()} 
+              disabled={isPending}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
+              {isPortuguese ? "Atualizar Imagens" : "Update Images"}
+            </Button>
+            
+            <Button 
+              size="sm" 
+              onClick={() => navigate('/counter')}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {isPortuguese ? "Nova Contagem" : "New Count"}
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -158,18 +176,8 @@ export function Scores() {
 
         {/* Table */}
         <Card>
-          <CardHeader className="flex-row justify-between">
+          <CardHeader>
             <CardTitle className="text-lg">{isPortuguese ? "Lista de Contagens" : "Counts List"}</CardTitle>
-            <Button className="flex-row justify-center" size="sm" onClick={() => handleUpdateVerify()} disabled={isPending}>
-
-              <Database />
-              {isPortuguese ? "Atualizar dados de imagem" : "Update data of images"}
-            </Button>
-            <Button className="flex-row justify-center" size="sm" onClick={() => navigate('/counter')} disabled={isPending}>
-
-              <Database />
-              {isPortuguese ? "Nova contagem" : "New count"}
-            </Button>
           </CardHeader>
 
 
@@ -204,7 +212,7 @@ export function Scores() {
         {result && result.pagination.total > result.pagination.take && (
           <div className="flex justify-center">
             <Pagination
-              pageIndex={result.pagination.page}
+              pageIndex={pageIndex}
               totalCount={result.pagination.total}
               perPage={result.pagination.take}
               onPageChange={handlePaginate}
